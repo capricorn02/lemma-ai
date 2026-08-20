@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>LEMMA - Рабочая среда</title>
+    <link rel="stylesheet" type="text/css" href="w2ui-2.0.min.css" />
+    <style>
+        body, html { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: sans-serif; }
+        #studio-layout { width: 100%; height: 100%; }
+        .slide-preview { width: 90px; height: 50px; object-fit: cover; border: 1px solid #ccc; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div id="studio-layout"></div>
+
+    <script type="module">
+        import { w2layout, w2sidebar, w2grid } from './w2ui-2.0.es6.js';
+
+        // 1. Создаем каркас приложения
+        let layout = new w2layout({
+            box: '#studio-layout',
+            name: 'studio_layout',
+            panels: [
+                { type: 'left', size: 250, resizable: true, minSize: 150 },
+                { type: 'main', html: 'Выберите презентацию слева' }
+            ]
+        });
+
+        // 2. Создаем сайдбар для папок
+        let sidebar = new w2sidebar({
+            name: 'studio_sidebar',
+            nodes: [
+                { id: 'root', text: 'Презентации в базе', group: true, expanded: true, nodes: [] }
+            ],
+            async onClick(event) {
+                if (event.target === 'root') return;
+                
+                // Загружаем слайды выбранной папки
+                let response = await fetch(`/dbLib/GetFolderCards.php?folder_id=${event.target}`);
+                if (response.ok) {
+                    let cards = await response.json();
+                    grid.clear();
+                    grid.add(cards);
+                    grid.refresh();
+                }
+            }
+        });
+
+        // 3. Создаем таблицу для слайдов
+        let grid = new w2grid({
+            name: 'studio_grid',
+            show: { toolbar: true, footer: true },
+            columns: [
+                { field: 'recid', text: 'ID', size: '60px', sortable: true },
+                { field: 'preview', text: 'Превью', size: '120px', style: 'text-align: center',
+                    render: function (record) {
+                        // Вызываем наш локальный GetCardBlob.php для показа картинки
+                        return `<img src="/dbLib/GetCardBlob.php?id=${record.id}" class="slide-preview" />`;
+                    }
+                },
+                { field: 'title', text: 'Название слайда', size: '40%', sortable: true },
+                { field: 'notes', text: 'Заметки к слайду', size: '60%' }
+            ]
+        });
+
+        // Встраиваем компоненты в разметку
+        layout.html('left', sidebar);
+        layout.html('main', grid);
+
+        // Функция автоматического наполнения сайдбара папками при старте
+        async function loadFoldersToSidebar() {
+            let response = await fetch('/dbLib/GetFolders.php');
+            if (response.ok) {
+                let folders = await response.json();
+                let nodes = folders.map(f => ({ id: f.id, text: f.title, icon: 'w2ui-icon-folder' }));
+                sidebar.add('root', nodes);
+                sidebar.refresh();
+            }
+        }
+
+        loadFoldersToSidebar();
+    </script>
+</body>
+</html>

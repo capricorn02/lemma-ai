@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>LEMMA - PPT_Loader (Загрузчик)</title>
+    <link rel="stylesheet" type="text/css" href="w2ui-2.0.min.css" />
+    <style>
+        body { font-family: sans-serif; background-color: #f5f6f8; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 500px; margin-top: 40px; }
+        .header-area { display: flex; justify-content: space-between; width: 500px; align-items: center; margin-top: 20px; }
+        h2 { margin: 0; color: #333; font-weight: 400; }
+        .w2ui-form { box-shadow: none !important; background: transparent !important; }
+        .back-btn { text-decoration: none; padding: 6px 12px; background: #eee; color: #333; border-radius: 4px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="header-area">
+        <h2>❶ Утилита PPT_Loader</h2>
+        <a href="index.php" class="back-btn">Назад</a>
+    </div>
+    <div class="container">
+        <div id="loader-form-box" style="width: 100%; height: 220px;"></div>
+    </div>
+    <script type="module">
+        // Импортируем w2ui и ваши функции как модули
+        import { w2form, w2utils, w2alert } from './w2ui-2.0.es6.js';
+        import * as dbLib from './dbLib.js';
+
+        let form = new w2form({
+            name: 'loader_form',
+            box: '#loader-form-box',
+            fields: [
+                { field: 'presentation_name', type: 'text', required: true, html: { label: 'Название презентации' } },
+                { field: 'create_folder', type: 'checkbox', html: { label: 'Создать Фолдер' } },
+                { field: 'folder_input', type: 'html', html: {
+                    label: 'Папка со слайдами',
+                    html: '<input id="dir-selector" type="file" webkitdirectory directory multiple style="width: 100%" />'
+                }}
+            ],
+            record: { presentation_name: 'Новая лекция', create_folder: true },
+            actions: {
+                'Запустить загрузку': async function () {
+                    if (this.validate().length > 0) return;
+                    const fileInput = document.getElementById('dir-selector');
+                    if (!fileInput || fileInput.files.length === 0) {
+                        w2alert('Пожалуйста, выберите папку.');
+                        return;
+                    }
+                    const slideFiles = Array.from(fileInput.files).filter(file => 
+                        file.name.toLowerCase().endsWith('.jpg') || file.name.toLowerCase().endsWith('.jpeg')
+                    );
+                    const totalSlides = slideFiles.length;
+                    if (totalSlides === 0) {
+                        w2alert('В папке не найдено файлов .jpg');
+                        return;
+                    }
+                    w2utils.lock(this.box, 'Инициализация...', true);
+                    try {
+                        let folderId = null;
+                        if (this.record.create_folder) {
+                            let folderResult = await dbLib.newFolder(this.record.presentation_name);
+                            if (folderResult) folderId = folderResult.Folder_ID;
+                        }
+                        for (let i = 0; i < totalSlides; i++) {
+                            const file = slideFiles[i];
+                            const slideTitle = file.name.replace(/\.[^/.]+$/, ""); 
+                            w2utils.lock(this.box, `Слайд ${i + 1} из ${totalSlides}`, true);
+                            let cardResult = await dbLib.newCard(slideTitle);
+                            if (cardResult && cardResult.Card_ID) {
+                                const newCardId = cardResult.Card_ID;
+                                await dbLib.setCardBlob(newCardId, file);
+                                if (folderId) await dbLib.setLinkLabel(newCardId, folderId);
+                            }
+                        }
+                        w2utils.unlock(this.box);
+                        w2alert(`Успешно! Слайдов: ${totalSlides}`, 'Успех');
+                    } catch (error) {
+                        w2utils.unlock(this.box);
+                        w2alert('Ошибка при загрузке.');
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
