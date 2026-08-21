@@ -1,28 +1,12 @@
-import {
-	query,
-	w2ui,
-	w2layout,
-	w2grid,
-	w2popup,
-	w2confirm,
-	w2alert,
-	w2prompt
-} from '/w2ui-2.0.es6.js';
+import { query, w2ui, w2layout, w2grid, w2popup, w2confirm, w2alert, w2prompt } from '/w2ui-2.0.es6.js';
 import SlideRecord2D from './js/slideRastr2d.js';
 import SlideRecordVideo from './js/slideVideo.js';
 
-const AppState = {
-	activeSlideInstance: null,
-	currentSlideId: null,
-	currentDemoType: null,
-	timerInterval: null,
-	startTime: 0
-};
+const AppState = { activeSlideInstance: null, currentSlideId: null, currentDemoType: null, timerInterval: null, startTime: 0 };
 
 document.addEventListener('DOMContentLoaded', function() {
 	new w2layout({
-		box: '#main-layout',
-		name: 'mainLayout',
+		box: '#main-layout', name: 'mainLayout',
 		panels: [
 			{ type: 'top', size: 40, content: '<h3 style="margin:8px 15px; color:#333;">LEMMA: Песочница ЖД</h3>' },
 			{ type: 'left', size: '50%', resizable: true, title: 'Исходные заготовки объектов' },
@@ -31,10 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 
 	new w2grid({
-		box: w2ui.mainLayout.el('left'),
-		name: 'gridObjects',
-		url: 'api.php?action=get_objects',
-		method: 'GET',
+		box: w2ui.mainLayout.el('left'), name: 'gridObjects', url: 'api.php?action=get_objects', method: 'GET',
 		show: { toolbar: true, footer: true, toolbarAdd: true, toolbarDelete: true },
 		columns: [
 			{ field: 'slide_id', text: 'slide_id', size: '80px', sortable: true },
@@ -47,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				if (ev.target === 'btn-record') {
 					const sel = w2ui.gridObjects.getSelection();
 					if (sel.length > 0) {
-						const selectedId = sel[0];
+						const selectedId = sel;
 						const rowData = w2ui.gridObjects.get(selectedId);
 						openStudioWindow(rowData);
 					}
@@ -58,23 +39,15 @@ document.addEventListener('DOMContentLoaded', function() {
 		onUnselect() { setTimeout(() => { if (w2ui.gridObjects.getSelection().length === 0) w2ui.gridObjects.toolbar.disable('btn-record'); }, 10); },
 		onAdd() { openUploadDialog(); },
 		onDelete(ev) {
-			ev.preventDefault();
-			const sel = w2ui.gridObjects.getSelection();
-			if (sel.length === 0) return;
+			ev.preventDefault(); const sel = w2ui.gridObjects.getSelection(); if (sel.length === 0) return;
 			w2confirm('Удалить объект?').yes(() => {
-				query('api.php', { action: 'delete_object', slide_id: sel }).then(() => {
-					w2ui.gridObjects.reload();
-					w2ui.gridObjects.toolbar.disable('btn-record');
-				});
+				query('api.php', { action: 'delete_object', slide_id: sel }).then(() => { w2ui.gridObjects.reload(); w2ui.gridObjects.toolbar.disable('btn-record'); });
 			});
 		}
 	});
 
 	new w2grid({
-		box: w2ui.mainLayout.el('main'),
-		name: 'gridScenarios',
-		url: 'api.php?action=get_scenarios',
-		method: 'GET',
+		box: w2ui.mainLayout.el('main'), name: 'gridScenarios', url: 'api.php?action=get_scenarios', method: 'GET',
 		show: { toolbar: true, footer: true },
 		columns: [
 			{ field: 'section_id', text: 'section_id', size: '90px', sortable: true },
@@ -87,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				if (ev.target === 'btn-play') {
 					const sel = w2ui.gridScenarios.getSelection();
 					if (sel.length > 0) {
-						const selectedId = sel[0];
+						const selectedId = sel;
 						const rowData = w2ui.gridScenarios.get(selectedId);
 						openPlayerWindow(rowData.section_id);
 					}
@@ -101,24 +74,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function openUploadDialog() {
 	w2popup.open({
-		title: 'Загрузка объекта в БД',
-		body: document.getElementById('upload-form-box').innerHTML,
-		width: 450,
-		height: 280,
+		title: 'Загрузка объекта в БД', body: document.getElementById('upload-form-box').innerHTML, width: 450, height: 280,
 		buttons: '<button class="w2ui-btn w2ui-btn-blue" id="popup-btn-upload">Сохранить</button>',
 		onOpen(ev) {
 			ev.done(() => {
 				document.getElementById('popup-btn-upload').onclick = () => {
 					const fd = new FormData(document.querySelector('#w2ui-popup #upload-file-form'));
 					fd.append('action', 'upload_object');
-					fetch('api.php', { method: 'POST', body: fd }).then(r => r.json()).then(res => {
-						if (res.status === 'success') {
-							w2popup.close();
-							w2ui.gridObjects.reload();
-						} else {
-							w2alert(res.message);
-						}
-					});
+					fetch('api.php', { method: 'POST', body: fd }).then(r => r.json()).then(res => { if (res.status === 'success') { w2popup.close(); w2ui.gridObjects.reload(); } else { w2alert(res.message); } });
 				};
 			});
 		}
@@ -126,38 +89,25 @@ function openUploadDialog() {
 }
 
 function openStudioWindow(gridRow) {
-	if (!gridRow) return;
-	AppState.currentSlideId = gridRow.slide_id;
-	AppState.currentDemoType = gridRow.demo_type;
+	if(!gridRow) return;
+	AppState.currentSlideId = gridRow.slide_id; AppState.currentDemoType = gridRow.demo_type;
 	w2popup.open({
-		title: 'Студия записи LEMMA — Объект: ' + gridRow.name,
-		body: document.getElementById('studio-window-box').innerHTML,
-		width: 900,
-		height: 650,
-		modal: true,
+		title: 'Студия записи LEMMA — Объект: ' + gridRow.name, body: document.getElementById('studio-window-box').innerHTML, width: 900, height: 650, modal: true,
 		onOpen(ev) {
 			ev.done(() => {
 				setTimeout(() => {
 					const wp = document.querySelector('#w2ui-popup #studio-workplace');
 					const tp = document.querySelector('#w2ui-popup #studio-custom-tools');
-					wp.style.width = '800px';
-					wp.style.height = '600px';
-					wp.style.margin = '0 auto';
+					wp.style.width = '800px'; wp.style.height = '600px'; wp.style.margin = '0 auto';
 					fetch('api.php?action=get_blob&source=object&id=' + AppState.currentSlideId).then(r => r.blob()).then(blob => {
 						AppState.activeSlideInstance = AppState.currentDemoType === 'video' ? new SlideRecordVideo([blob]) : new SlideRecord2D([blob]);
-						AppState.activeSlideInstance.render(wp);
-						AppState.activeSlideInstance.renderTools(tp);
-						initStudioEvents();
+						AppState.activeSlideInstance.render(wp); AppState.activeSlideInstance.renderTools(tp); initStudioEvents();
 					});
 				}, 150);
 			});
 		},
-		onClose() {
-			if (AppState.activeSlideInstance) AppState.activeSlideInstance.finish();
-			clearInterval(AppState.timerInterval);
-			AppState.activeSlideInstance = null;
-		}
-	});
+		onClose() { if (AppState.activeSlideInstance) AppState.activeSlideInstance.finish(); clearInterval(AppState.timerInterval); AppState.activeSlideInstance = null; }
+    });
 }
 
 function initStudioEvents() {
@@ -165,11 +115,8 @@ function initStudioEvents() {
 	const btnStop = document.querySelector('#w2ui-popup #btn-stop-record');
 	const timerDisplay = document.querySelector('#w2ui-popup #record-timer');
 	const statusTxt = document.querySelector('#w2ui-popup #studio-status');
-	
 	btnStart.onclick = () => {
-		btnStart.disabled = true;
-		btnStop.disabled = false;
-		statusTxt.textContent = '🔴 Запись движений...';
+		btnStart.disabled = true; btnStop.disabled = false; statusTxt.textContent = '🔴 Запись движений...';
 		AppState.startTime = Date.now();
 		AppState.timerInterval = setInterval(() => {
 			const diff = Date.now() - AppState.startTime;
@@ -180,68 +127,43 @@ function initStudioEvents() {
 		}, 30);
 		AppState.activeSlideInstance.start();
 	};
-	
 	btnStop.onclick = () => {
-		clearInterval(AppState.timerInterval);
-		btnStop.disabled = true;
-		AppState.activeSlideInstance.finish();
-		const recordedCommands = AppState.activeSlideInstance.getCommands();
+		clearInterval(AppState.timerInterval); btnStop.disabled = true;
+		AppState.activeSlideInstance.finish(); const recordedCommands = AppState.activeSlideInstance.getCommands();
 		const val = prompt('Введите название сценария демонстрации:', '');
 		if (!val) { w2popup.close(); return; }
-		const fd = new FormData();
-		fd.append('action', 'save_scenario');
-		fd.append('slide_id', AppState.currentSlideId);
-		fd.append('name', val);
-		fd.append('commands', JSON.stringify(recordedCommands));
-		fetch('api.php', { method: 'POST', body: fd }).then(r => r.json()).then(res => {
-			if (res.status === 'success') {
-				w2popup.close();
-				w2ui.gridScenarios.reload();
-			} else {
-				w2alert(res.message);
-			}
-		});
+		const fd = new FormData(); fd.append('action', 'save_scenario'); fd.append('slide_id', AppState.currentSlideId); fd.append('name', val); fd.append('commands', JSON.stringify(recordedCommands));
+		fetch('api.php', { method: 'POST', body: fd }).then(r => r.json()).then(res => { if (res.status === 'success') { w2popup.close(); w2ui.gridScenarios.reload(); } else { w2alert(res.message); } });
 	};
 }
 
 function openPlayerWindow(sectionId) {
 	w2popup.open({
-		title: 'Воспроизведение ЖД',
-		body: document.getElementById('player-window-box').innerHTML,
-		width: 900,
-		height: 650,
-		modal: true,
+		title: 'Воспроизведение ЖД', body: document.getElementById('player-window-box').innerHTML, width: 900, height: 650, modal: true,
 		onOpen(ev) {
 			ev.done(() => {
 				setTimeout(() => {
 					const wp = document.querySelector('#w2ui-popup #player-workplace');
 					const td = document.querySelector('#w2ui-popup #player-title');
-					wp.style.width = '800px';
-					wp.style.height = '600px';
-					wp.style.margin = '0 auto';
+					wp.style.width = '800px'; wp.style.height = '600px'; wp.style.margin = '0 auto';
 					fetch('api.php?action=get_scenario_data&section_id=' + sectionId).then(r => r.json()).then(res => {
 						if (res.status !== 'success') { w2alert(res.message); w2popup.close(); return; }
-						const scenario = res.data;
-						td.textContent = 'Сценарий: ' + scenario.name;
+						const scenario = res.data; td.textContent = 'Сценарий: ' + scenario.name;
 						const commandsArray = JSON.parse(scenario.commands_json);
 						fetch('api.php?action=get_blob&source=command&id=' + sectionId).then(r => r.blob()).then(blob => {
 							const playerArgs = [blob, commandsArray];
 							if (scenario.demo_type === 'video') {
-								AppState.activeSlideInstance = new SlideRecordVideo(playerArgs);
+								AppState.activeSlideInstance = new SlideRecordVideo(...playerArgs);
 							} else {
-								AppState.activeSlideInstance = new SlideRecord2D(playerArgs);
+								AppState.activeSlideInstance = new SlideRecord2D(...playerArgs);
 							}
-							AppState.activeSlideInstance.render(wp);
-							initPlayerEvents();
+							AppState.activeSlideInstance.render(wp); initPlayerEvents();
 						});
 					});
 				}, 150);
 			});
 		},
-		onClose() {
-			if (AppState.activeSlideInstance) AppState.activeSlideInstance.pause();
-			AppState.activeSlideInstance = null;
-		}
+		onClose() { if (AppState.activeSlideInstance) AppState.activeSlideInstance.pause(); AppState.activeSlideInstance = null; }
 	});
 }
 
