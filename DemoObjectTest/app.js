@@ -1,9 +1,7 @@
 import { query, w2ui, w2layout, w2grid, w2popup, w2confirm, w2alert, w2prompt } from '/w2ui-2.0.es6.js';
 import SlideRecord2D from './js/slideRastr2d.js';
 import SlideRecordVideo from './js/slideVideo.js';
-
 const AppState = { activeSlideInstance: null, currentSlideId: null, currentDemoType: null, timerInterval: null, startTime: 0 };
-
 document.addEventListener('DOMContentLoaded', function() {
     new w2layout({
         box: '#main-layout', name: 'mainLayout',
@@ -13,7 +11,6 @@ document.addEventListener('DOMContentLoaded', function() {
             { type: 'main', size: '50%', title: 'Записанные ЖД демонстрации' }
         ]
     });
-
     new w2grid({
         box: w2ui.mainLayout.el('left'), name: 'gridObjects', url: 'api.php?action=get_objects', method: 'GET',
         show: { toolbar: true, footer: true, toolbarAdd: true, toolbarDelete: true },
@@ -27,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
             onClick(ev) {
                 if (ev.target === 'btn-record') {
                     const sel = w2ui.gridObjects.getSelection();
-                    if (sel.length > 0) { const sId = sel; openStudioWindow(w2ui.gridObjects.get(sId)); }
+                    if (sel.length > 0) { openStudioWindow(w2ui.gridObjects.get(sel[0])); }
                 }
             }
         },
@@ -41,7 +38,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
-
     new w2grid({
         box: w2ui.mainLayout.el('main'), name: 'gridScenarios', url: 'api.php?action=get_scenarios', method: 'GET',
         show: { toolbar: true, footer: true },
@@ -52,13 +48,12 @@ document.addEventListener('DOMContentLoaded', function() {
         ],
         toolbar: {
             items: [{ type: 'button', id: 'btn-play', text: '▶ Просмотр ЖД', icon: 'w2ui-icon-search', disabled: true }],
-            onClick(ev) { if (ev.target === 'btn-play') { const sel = w2ui.gridScenarios.getSelection(); if (sel.length > 0) openPlayerWindow(w2ui.gridScenarios.get(sel).section_id); } }
+            onClick(ev) { if (ev.target === 'btn-play') { const sel = w2ui.gridScenarios.getSelection(); if (sel.length > 0) openPlayerWindow(w2ui.gridScenarios.get(sel[0]).section_id); } }
         },
         onSelect() { setTimeout(() => w2ui.gridScenarios.toolbar.enable('btn-play'), 10); },
         onUnselect() { setTimeout(() => { if (w2ui.gridScenarios.getSelection().length === 0) w2ui.gridScenarios.toolbar.disable('btn-play'); }, 10); }
     });
 });
-
 function openUploadDialog() {
     w2popup.open({
         title: 'Загрузка объекта в БД', body: document.getElementById('upload-form-box').innerHTML, width: 450, height: 280,
@@ -74,7 +69,6 @@ function openUploadDialog() {
         }
     });
 }
-
 function openStudioWindow(gridRow) {
     if(!gridRow) return;
     AppState.currentSlideId = gridRow.slide_id; AppState.currentDemoType = gridRow.demo_type;
@@ -96,13 +90,11 @@ function openStudioWindow(gridRow) {
         onClose() { if (AppState.activeSlideInstance) AppState.activeSlideInstance.finish(); clearInterval(AppState.timerInterval); AppState.activeSlideInstance = null; }
     });
 }
-
 function initStudioEvents() {
     const btnStart = document.querySelector('#w2ui-popup #btn-start-record');
     const btnStop = document.querySelector('#w2ui-popup #btn-stop-record');
     const timerDisplay = document.querySelector('#w2ui-popup #record-timer');
     const statusTxt = document.querySelector('#w2ui-popup #studio-status');
-    
     btnStart.onclick = () => {
         btnStart.disabled = true; btnStop.disabled = false; statusTxt.textContent = '🔴 Запись движений...';
         AppState.startTime = Date.now();
@@ -115,7 +107,6 @@ function initStudioEvents() {
         }, 30);
         AppState.activeSlideInstance.start();
     };
-    
     btnStop.onclick = () => {
         clearInterval(AppState.timerInterval); btnStop.disabled = true;
         AppState.activeSlideInstance.finish(); const recordedCommands = AppState.activeSlideInstance.getCommands();
@@ -125,7 +116,6 @@ function initStudioEvents() {
         fetch('api.php', { method: 'POST', body: fd }).then(r => r.json()).then(res => { if (res.status === 'success') { w2popup.close(); w2ui.gridScenarios.reload(); } else { w2alert(res.message); } });
     };
 }
-
 function openPlayerWindow(sectionId) {
     w2popup.open({
         title: 'Воспроизведение ЖД', body: document.getElementById('player-window-box').innerHTML, width: 900, height: 650, modal: true,
@@ -150,7 +140,6 @@ function openPlayerWindow(sectionId) {
         onClose() { if (AppState.activeSlideInstance) AppState.activeSlideInstance.pause(); AppState.activeSlideInstance = null; }
     });
 }
-
 function initPlayerEvents() { 
     const btnPlay = document.querySelector('#w2ui-popup #btn-player-play');
     const btnPause = document.querySelector('#w2ui-popup #btn-player-pause');
