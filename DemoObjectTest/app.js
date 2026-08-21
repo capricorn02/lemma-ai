@@ -94,21 +94,20 @@ function openPlayerWindow(sectionId) {
                     const wp = document.querySelector('#w2ui-popup #player-workplace');
                     const td = document.querySelector('#w2ui-popup #player-title');
                     wp.style.width = '800px'; wp.style.height = '600px'; wp.style.margin = '0 auto';
+                    
                     fetch('api.php?action=get_scenario_data&section_id=' + sectionId).then(r => r.json()).then(res => {
                         if (res.status !== 'success') { w2alert(res.message); w2popup.close(); return; }
                         const scenario = res.data; td.textContent = 'Сценарий: ' + scenario.name;
                         const commandsArray = JSON.parse(scenario.commands_json);
-                        alert('Отладка 1: Команд в базе = ' + commandsArray.length);
+                        
                         fetch('api.php?action=get_blob&source=command&id=' + sectionId).then(r => r.blob()).then(blob => {
                             const playerArgs = [blob, commandsArray];
-                            alert('Отладка 2: Аргументов в плеер = ' + playerArgs.length);
                             if (scenario.demo_type === 'video') {
                                 AppState.activeSlideInstance = new SlideRecordVideo(...playerArgs);
                             } else {
                                 AppState.activeSlideInstance = new SlideRecord2D(...playerArgs);
                             }
                             AppState.activeSlideInstance.render(wp);
-                            alert('Отладка 3: recordMode плеера = ' + AppState.activeSlideInstance.recordMode);
                             initPlayerEvents();
                         });
                     });
