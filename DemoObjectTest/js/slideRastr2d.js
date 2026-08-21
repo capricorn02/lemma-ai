@@ -12,12 +12,12 @@ export default class extends SlideA {
 		this.slideDIV.insertAdjacentHTML("beforeEnd", 
 		// Правильный вариант без пропущенных знаков доллара и обратных слэшей:
 '<img src="' + URL.createObjectURL(this.blob) + '" width="' + this.width + '" height="' + this.height + '" draggable="false" style="z-index: 200; position: absolute; top: 0px; left: 0px">');
-	}	
-	beginPath () { this.context.beginPath(); }
-	moveTo (options) { let XY = this.denorm(options); this.context.moveTo(XY[0], XY[1]); }
-	lineTo (options) { let XY = this.denorm(options); this.context.lineTo(XY[0], XY[1]); this.context.stroke(); }
-	closePath () { this.context.closePath(); }
-	setPenColor (options) { this.context.strokeStyle = options; this.penColor = options; }
+	render (slideElement) {
+		super.render(slideElement);
+		this.slideDIV.insertAdjacentHTML("beforeEnd", 
+			'<img src="' + URL.createObjectURL(this.blob) + '" width="' + this.width + '" height="' + this.height + '" draggable="false" style="z-index: 200; position: absolute; top: 0px; left: 0px">'
+		);
+	}
 	setPenWidth (options) { this.context.lineWidth = options; this.penWidth = options; }	
 	renderTools(toolsElement) {
 		super.renderTools(toolsElement);
