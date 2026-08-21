@@ -105,7 +105,7 @@ switch ($action) {
 
     case 'get_scenarios':
         try {
-            $stmt = $pdo->query("SELECT section_id, slide_id, name FROM demo_commands ORDER BY section_id DESC");
+            $stmt = $pdo->query("SELECT section_id, slide_id, name, commands_json FROM demo_commands ORDER BY section_id DESC");
             $records = $stmt->fetchAll();
             foreach ($records as &$row) { $row['recid'] = $row['section_id']; }
             echo json_encode(['status' => 'success', 'records' => $records]);
@@ -123,7 +123,7 @@ switch ($action) {
             } else {
                 $stmt = $pdo->prepare("SELECT blob_data FROM demo_objects WHERE slide_id = ?");
             }
-            $stmt->execute([$id]);
+            $stmt->execute([id]);
             $stmt->bindColumn(1, $lob, PDO::PARAM_LOB);
             if ($stmt->fetch(PDO::FETCH_BOUND)) {
                 if (ob_get_length()) ob_clean();
@@ -137,18 +137,6 @@ switch ($action) {
         } catch (Exception $e) {
             header("HTTP/1.0 500 Internal Server Error");
             echo $e->getMessage();
-        }
-        break;
-
-    case 'get_scenario_data':
-        $section_id = intval($_GET['section_id'] ?? 0);
-        try {
-            $stmt = $pdo->prepare("SELECT section_id, name, commands_json, demo_objects.demo_type FROM demo_commands LEFT JOIN demo_objects USING (slide_id) WHERE section_id = ?");
-            $stmt->execute([$section_id]);
-            $data = $stmt->fetch();
-            if ($data) { echo json_encode(['status' => 'success', 'data' => $data]); } else { echo json_encode(['status' => 'error', 'message' => 'Сценарий не найден']); }
-        } catch (Exception $e) {
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
         }
         break;
 
