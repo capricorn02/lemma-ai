@@ -5,28 +5,15 @@
     <title>LEMMA - Тестовый стенд Живых Демонстраций</title>
     <link rel="stylesheet" type="text/css" href="/w2ui-2.0.min.css" />
     <style>
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
-            font-family: Arial, sans-serif; background-color: #f4f4f6;
-        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: Arial, sans-serif; background-color: #f4f4f6; }
         #main-layout { width: 100%; height: 100%; }
-        .slide-container-box {
-            width: 100%; height: 100%; background: #222;
-            display: flex; align-items: center; justify-content: center; position: relative;
-        }
-        .studio-controls {
-            padding: 10px; background: #eee; border-bottom: 1px solid #ccc;
-            display: flex; gap: 10px; align-items: center;
-        }
-        .timer-display {
-            font-size: 18px; font-weight: bold; font-family: monospace;
-            background: #333; color: #0f0; padding: 4px 10px; border-radius: 4px;
-        }
+        .slide-container-box { width: 100%; height: 100%; background: #222; display: flex; align-items: center; justify-content: center; position: relative; }
+        .studio-controls { padding: 10px; background: #eee; border-bottom: 1px solid #ccc; display: flex; gap: 10px; align-items: center; }
+        .timer-display { font-size: 18px; font-weight: bold; font-family: monospace; background: #333; color: #0f0; padding: 4px 10px; border-radius: 4px; }
     </style>
 </head>
 <body>
     <div id="main-layout"></div>
-
     <div id="upload-form-box" style="display:none; padding: 15px;">
         <form id="upload-file-form" enctype="multipart/form-data">
             <div style="margin-bottom:10px;">
@@ -46,7 +33,6 @@
             </div>
         </form>
     </div>
-
     <div id="studio-window-box" style="display:none; width:100%; height:100%; flex-direction:column;">
         <div class="studio-controls">
             <button id="btn-start-record" class="w2ui-btn w2ui-btn-blue">🔴 Старт записи</button>
@@ -59,7 +45,6 @@
             <div id="studio-workplace" class="slide-container-box"></div>
         </div>
     </div>
-
     <div id="player-window-box" style="display:none; width:100%; height:100%; flex-direction:column;">
         <div class="studio-controls">
             <button id="btn-player-play" class="w2ui-btn w2ui-btn-green">▶ Воспроизвести</button>
@@ -71,7 +56,6 @@
             <div id="player-workplace" class="slide-container-box"></div>
         </div>
     </div>
-
-    <script type="module" src="app.js"></script>
+    <script type="module" src="app.js?v=2"></script>
 </body>
 </html>

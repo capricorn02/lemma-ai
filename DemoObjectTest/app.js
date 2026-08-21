@@ -115,21 +115,21 @@ function initStudioEvents() {
 	const btnStop = document.querySelector('#w2ui-popup #btn-stop-record');
 	const timerDisplay = document.querySelector('#w2ui-popup #record-timer');
 	const statusTxt = document.querySelector('#w2ui-popup #studio-status');
-	btnStart.onclick = () => {
-		btnStart.disabled = true; btnStop.disabled = false; statusTxt.textContent = '🔴 Запись движений...';
-		AppState.startTime = Date.now();
-		AppState.timerInterval = setInterval(() => {
-			const diff = Date.now() - AppState.startTime;
-			const ms = String(diff % 1000).padStart(3, '0').slice(0, 2);
-			const secs = String(Math.floor(diff / 1000) % 60).padStart(2, '0');
-			const mins = String(Math.floor(diff / 60000)).padStart(2, '0');
-			timerDisplay.textContent = mins + ':' + secs + '.' + ms;
-		}, 30);
-		AppState.activeSlideInstance.start();
-	};
-	btnStop.onclick = () => {
-		clearInterval(AppState.timerInterval); btnStop.disabled = true;
-		AppState.activeSlideInstance.finish(); const recordedCommands = AppState.activeSlideInstance.getCommands();
+const commandsArray = JSON.parse(scenario.commands_json);
+alert('Окно 1: Команд в БД = ' + commandsArray.length);
+fetch('api.php?action=get_blob&source=command&id=' + sectionId)
+.then(r => r.blob()).then(blob => {
+    const playerArgs = [blob, commandsArray];
+    alert('Окно 2: Аргументов передано = ' + playerArgs.length);
+    if (scenario.demo_type === 'video') {
+        AppState.activeSlideInstance = new SlideRecordVideo(...playerArgs);
+    } else {
+        AppState.activeSlideInstance = new SlideRecord2D(...playerArgs);
+    }
+    AppState.activeSlideInstance.render(wp);
+    alert('Окно 3: Режим плеера recordMode = ' + AppState.activeSlideInstance.recordMode);
+    initPlayerEvents();
+});
 		const val = prompt('Введите название сценария демонстрации:', '');
 		if (!val) { w2popup.close(); return; }
 		const fd = new FormData(); fd.append('action', 'save_scenario'); fd.append('slide_id', AppState.currentSlideId); fd.append('name', val); fd.append('commands', JSON.stringify(recordedCommands));

@@ -1,11 +1,10 @@
 export class SlideA {
 	recordMode = true;
 	commands = [];
-	
 	constructor (atrArr) {
 		console.log('SlideA init, args:', atrArr.length);
 		this.blob = atrArr[0];
-		if (atrArr.length > 1) { 
+		if (atrArr.length > 1) {
 			this.recordMode = false;
 			this.commands = atrArr[1];
 			this.index = 0;
@@ -14,7 +13,7 @@ export class SlideA {
 		this.finish = this.finish.bind(this);
 		this.pause = this.pause.bind(this);
 		this.play = this.play.bind(this);
-		this.next = this.next.bind(this); 
+		this.next = this.next.bind(this);
 		this.fixate = this.fixate.bind(this);
 		this.execute = this.execute.bind(this);
 		this.toolsShowHide = this.toolsShowHide.bind(this);
@@ -22,7 +21,7 @@ export class SlideA {
 	render (slideElement) {
 		this.slideBlock = slideElement;
 		this.slideBlock.innerHTML = '';
-		this.slideBlock.style.backgroundColor = 'black'; 
+		this.slideBlock.style.backgroundColor = 'black';
 		let xx = Math.floor(this.slideBlock.clientWidth / 4);
 		let yy = Math.floor(this.slideBlock.clientHeight / 3);
 		if (xx > yy) { this.width = yy * 4; this.height = yy * 3; } else { this.width = xx * 4; this.height = xx * 3; }
@@ -85,11 +84,11 @@ export class SlideA {
 			let command = this.commands[this.index];
 			this.interval = command[0];
 			this.startTime = (new Date()).getTime();
-			this.setTimeID = setTimeout(this.next, this.interval);
+			this.setTimeID = setTimeout(() => { this.next(); }, this.interval);
 		} else {
 			this.interval = this.interval - (this.stopTime - this.startTime);
 			this.startTime = (new Date()).getTime();
-			this.setTimeID = setTimeout(this.next, this.interval);
+			this.setTimeID = setTimeout(() => { this.next(); }, this.interval);
 		}
 	}
 	pause(){
@@ -107,7 +106,7 @@ export class SlideA {
 			let t1 = nextCommand[0];
 			this.interval = t1 - t0;
 			this.startTime = (new Date()).getTime();
-			this.setTimeID = setTimeout(this.next, this.interval);
+			this.setTimeID = setTimeout(() => { this.next(); }, this.interval);
 		}
 	}
 }
