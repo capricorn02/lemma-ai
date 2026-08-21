@@ -15,9 +15,9 @@ export function initGridScenarios(openPlayerWindow) {
                 if (ev.target === 'btn-play') {
                     const sel = w2ui.gridScenarios.getSelection();
                     if (sel.length > 0) {
-                        const selectedId = sel[0]; // Исправлено: берем ID как число из массива w2ui 2.0
-                        const rowData = w2ui.gridScenarios.get(selectedId);
-                        openPlayerWindow(rowData.section_id);
+                        const selectedId = sel; 
+                        const rowData = w2ui.gridScenarios.get(selectedId); 
+                        openPlayerWindow(rowData); // Передаем ВСЮ строку, как в студии!
                     }
                 }
             }

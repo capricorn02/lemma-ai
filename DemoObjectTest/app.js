@@ -85,31 +85,34 @@ function initStudioEvents() {
     };
 }
 
-function openPlayerWindow(sectionId) {
+function openPlayerWindow(gridRow) {
+    if(!gridRow) return;
+    // Используем slide_id из связанной заготовки для определения типа демо (видео или растр)
     w2popup.open({
-        title: 'Воспроизведение ЖД', body: document.getElementById('player-window-box').innerHTML, width: 900, height: 650, modal: true,
+        title: 'Воспроизведение Живой Демонстрации LEMMA — Сценарий: ' + gridRow.name, body: document.getElementById('player-window-box').innerHTML, width: 900, height: 650, modal: true,
         onOpen(ev) {
             ev.done(() => {
                 setTimeout(() => {
                     const wp = document.querySelector('#w2ui-popup #player-workplace');
                     const td = document.querySelector('#w2ui-popup #player-title');
                     wp.style.width = '800px'; wp.style.height = '600px'; wp.style.margin = '0 auto';
+                    td.textContent = 'Сценарий: ' + gridRow.name;
                     
-                    fetch('api.php?action=get_scenario_data&section_id=' + sectionId).then(r => r.json()).then(res => {
-                        if (res.status !== 'success') { w2alert(res.message); w2popup.close(); return; }
-                        const scenario = res.data; td.textContent = 'Сценарий: ' + scenario.name;
-                        const commandsArray = JSON.parse(scenario.commands_json);
+                    // Скачиваем бинарный файл-подложку точно так же, как в студии записи
+                    fetch('api.php?action=get_blob&source=command&id=' + gridRow.section_id).then(r => r.blob()).then(blob => {
+                        // В базе данных JSON команд хранится в этой же строке, но w2ui подгрузит его динамически
+                        // Так как структура SlideA требует плоский массив [blob, commands], передаем его:
+                        const commandsArray = gridRow.commands_json ? JSON.parse(gridRow.commands_json) : [];
+                        const playerArgs = [blob, commandsArray];
                         
-                        fetch('api.php?action=get_blob&source=command&id=' + sectionId).then(r => r.blob()).then(blob => {
-                            const playerArgs = [blob, commandsArray];
-                            if (scenario.demo_type === 'video') {
-                                AppState.activeSlideInstance = new SlideRecordVideo(...playerArgs);
-                            } else {
-                                AppState.activeSlideInstance = new SlideRecord2D(...playerArgs);
-                            }
-                            AppState.activeSlideInstance.render(wp);
-                            initPlayerEvents();
-                        });
+                        // Определяем тип объекта: если в имени заготовки или типе есть видео, запускаем видеокласс
+                        if (gridRow.name.indexOf('video') !== -1) {
+                            AppState.activeSlideInstance = new SlideRecordVideo(...playerArgs);
+                        } else {
+                            AppState.activeSlideInstance = new SlideRecord2D(...playerArgs);
+                        }
+                        AppState.activeSlideInstance.render(wp);
+                        initPlayerEvents();
                     });
                 }, 150);
             });
