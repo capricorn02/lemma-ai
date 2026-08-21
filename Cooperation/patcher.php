@@ -3,10 +3,13 @@
 header('Content-Type: text/html; charset=utf-8');
 
 $message = '';
+$success = false; // Флаг для JS-очистки окна
+
 $file = $_POST['target_file'] ?? '';
 $action = $_POST['patch_action'] ?? 'replace_file';
 $start_line = intval($_POST['start_line'] ?? 1);
 $count_lines = intval($_POST['count_lines'] ?? 0);
+$marker = $_POST['marker_text'] ?? '';
 $content = $_POST['raw_content'] ?? '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -15,12 +18,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $finalPath = dirname(__FILE__) . '/../' . trim($file);
         
-        // Проверяем: если пришёл JSON (начинается с {), парсим его, иначе работаем как с чистым текстом
+        // Автоматическая поддержка старого JSON-формата, если пришел он
         $testJson = json_decode(trim($content), true);
         if (json_last_error() === JSON_ERROR_NONE && is_array($testJson)) {
             $action = $testJson['action'] ?? $action;
             $start_line = $testJson['start_line'] ?? $start_line;
             $count_lines = $testJson['count_lines'] ?? $count_lines;
+            $marker = $testJson['marker'] ?? $marker;
             $payload = $testJson['content'] ?? '';
             $content = is_array($payload) ? implode("\n", $payload) : $payload;
         }
@@ -31,6 +35,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             clearstatcache();
             file_put_contents($finalPath, $content);
             $message = "<div style='color:green;font-weight:bold;'>✅ Файл полностью перезаписан: $file</div>";
+            $success = true;
+        } elseif ($action === 'patch_marker') {
+            if (!file_exists($finalPath)) {
+                $message = "<div style='color:red;font-weight:bold;'>❌ Ошибка: Файл не найден: $file</div>";
+            } elseif (empty($marker)) {
+                $message = "<div style='color:red;font-weight:bold;'>❌ Ошибка: Не указан маркер для поиска!</div>";
+            } else {
+                $fileContent = file_get_contents($finalPath);
+                // Ищем маркер (убираем лишние пробелы по краям для точности)
+                $trimmedMarker = trim($marker);
+                
+                if (strpos($fileContent, $trimmedMarker) === false) {
+                    $message = "<div style='color:red;font-weight:bold;'>❌ Ошибка: Маркер не найден в тексте файла!</div>";
+                } else {
+                    // Заменяем маркер на новый контент
+                    $updatedContent = str_replace($trimmedMarker, $content, $fileContent);
+                    clearstatcache();
+                    file_put_contents($finalPath, $updatedContent);
+                    $message = "<div style='color:green;font-weight:bold;'>✅ Патч по маркеру успешно применен к файлу: $file</div>";
+                    $success = true;
+                }
+            }
         } elseif ($action === 'patch_lines') {
             if (!file_exists($finalPath)) {
                 $message = "<div style='color:red;font-weight:bold;'>❌ Ошибка: Файл не найден: $file</div>";
@@ -42,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 clearstatcache();
                 file_put_contents($finalPath, implode("\n", $lines));
                 $message = "<div style='color:green;font-weight:bold;'>✅ Точечные строки изменены в файле: $file (строка $start_line)</div>";
+                $success = true;
             }
         }
     }
@@ -70,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="container">
         <h2>🛠 Текстовый накатчик кодовой базы LEMMA</h2>
         <div class="msg"><?php echo $message; ?></div>
-        <form method="POST">
+        <form method="POST" id="patcher-form">
             <div class="row">
                 <div class="field" style="flex: 2;">
                     <label>Путь к файлу проекта:</label>
@@ -80,8 +107,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label>Действие:</label>
                     <select name="patch_action" id="action-select" onchange="togglePatchFields()">
                         <option value="replace_file" <?php if($action == 'replace_file') echo 'selected'; ?>>Полная замена / Создание</option>
-                        <option value="patch_lines" <?php if($action == 'patch_lines') echo 'selected'; ?>>Точечная вставка / Замена строк</option>
+                        <option value="patch_marker" <?php if($action == 'patch_marker') echo 'selected'; ?>>Замена по ТЕКСТОВОМУ МАРКЕРУ</option>
+                        <option value="patch_lines" <?php if($action == 'patch_lines') echo 'selected'; ?>>Точечная вставка по № строки</option>
                     </select>
+                </div>
+            </div>
+            
+            <div class="row" id="marker-field" style="display: <?php echo ($action === 'patch_marker') ? 'flex' : 'none'; ?>;">
+                <div class="field">
+                    <label style="color: #0056b3;">Текст-маркер (что найти и ЗАМЕНИТЬ):</label>
+                    <input type="text" name="marker_text" value="<?php echo htmlspecialchars($marker); ?>" placeholder="Вставьте строку-оригинал из файла...">
                 </div>
             </div>
             
@@ -91,25 +126,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="number" name="start_line" value="<?php echo $start_line; ?>" min="1">
                 </div>
                 <div class="field">
-                    <label>Сколько старых строк удалить (0 - просто вставка):</label>
+                    <label>Сколько строк удалить:</label>
                     <input type="number" name="count_lines" value="<?php echo $count_lines; ?>" min="0">
                 </div>
             </div>
 
             <div class="field" style="margin-top: 15px;">
-                <label>Чистый исходный код (RAW):</label>
-                <textarea name="raw_content" placeholder="Вставьте сюда чистый код из чата..." required><?php echo htmlspecialchars($content); ?></textarea>
+                <label>Новый исходный код для вставки:</label>
+                <textarea name="raw_content" id="raw-content" placeholder="Вставьте сюда код из чата..." required><?php echo htmlspecialchars($content); ?></textarea>
             </div>
             
             <button type="submit">🚀 Запустить обновление файлов</button>
         </form>
     </div>
+
     <script>
         function togglePatchFields() {
-            var select = document.getElementById('action-select');
-            var fields = document.getElementById('patch-fields');
-            fields.style.display = (select.value === 'patch_lines') ? 'flex' : 'none';
+            var action = document.getElementById('action-select').value;
+            document.getElementById('marker-field').style.display = (action === 'patch_marker') ? 'flex' : 'none';
+            document.getElementById('patch-fields').style.display = (action === 'patch_lines') ? 'flex' : 'none';
         }
+        
+        // Автоматическая очистка окна с текстом при успешном накате
+        <?php if ($success): ?>
+            document.getElementById('raw-content').value = '';
+        <?php endif; ?>
     </script>
 </body>
 </html>

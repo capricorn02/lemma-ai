@@ -59,32 +59,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (ev.target === 'btn-play') {
                     const sel = w2ui.gridScenarios.getSelection();
                     if (sel.length > 0) {
-                        const selectedId = sel;
+                        const selectedId = sel[0]; // Жестко берем число из массива
                         const rowData = w2ui.gridScenarios.get(selectedId);
                         openPlayerWindow(rowData.section_id);
                     }
                 }
             }
-        },
-        onSelect() { setTimeout(() => w2ui.gridScenarios.toolbar.enable('btn-play'), 10); },
-        onUnselect() { setTimeout(() => { if (w2ui.gridScenarios.getSelection().length === 0) w2ui.gridScenarios.toolbar.disable('btn-play'); }, 10); }
+            onClick(ev) {
+                if (ev.target === 'btn-play') {
+                    const sel = w2ui.gridScenarios.getSelection();
+                    if (sel.length > 0) {
+                        const selectedId = sel[0]; // Жестко берем число из массива
+                        const rowData = w2ui.gridScenarios.get(selectedId);
+                        openPlayerWindow(rowData.section_id);
+                    }
+                }
+            }
+
+
     });
-});
-  function openUploadDialog() {
-    w2popup.open({
-        title: 'Загрузка объекта в БД', body: document.getElementById('upload-form-box').innerHTML, width: 450, height: 280,
-        buttons: '<button class="w2ui-btn w2ui-btn-blue" id="popup-btn-upload">Сохранить</button>',
-        onOpen(ev) {
-            ev.done(() => {
-                document.getElementById('popup-btn-upload').onclick = () => {
-                    const fd = new FormData(document.querySelector('#w2ui-popup #upload-file-form'));
-                    fd.append('action', 'upload_object');
-                    fetch('api.php', { method: 'POST', body: fd }).then(r => r.json()).then(res => { if (res.status === 'success') { w2popup.close(); w2ui.gridObjects.reload(); } else { w2alert(res.message); } });
-                };
-            });
-        }
-    });
-}
 
 function openStudioWindow(gridRow) {
     if(!gridRow) return;
