@@ -56,6 +56,7 @@
             <div id="player-workplace" class="slide-container-box"></div>
         </div>
     </div>
-    <script type="module" src="app.js?v=2"></script>
+    <script type="module" src="app.js?v=3"></script>
 </body>
 </html>
+ 
