@@ -1,6 +1,8 @@
-import { query, w2ui, w2layout, w2grid, w2popup, w2confirm, w2alert, w2prompt } from '/w2ui-2.0.es6.js';
+import { w2ui, w2layout, w2popup, w2alert } from '/w2ui-2.0.es6.js';
 import SlideRecord2D from './js/slideRastr2d.js';
 import SlideRecordVideo from './js/slideVideo.js';
+import { initGridObjects } from './js/appGridObjects.js';
+import { initGridScenarios } from './js/appGridScenarios.js';
 
 const AppState = { activeSlideInstance: null, currentSlideId: null, currentDemoType: null, timerInterval: null, startTime: 0 };
 
@@ -8,76 +10,31 @@ document.addEventListener('DOMContentLoaded', function() {
     new w2layout({
         box: '#main-layout', name: 'mainLayout',
         panels: [
-            { type: 'top', size: 40, content: '<h3 style="margin:8px 15px; color:#333;">LEMMA: Песочница ЖД</h3>' },
+            { type: 'top', size: 40, content: '<h3 style=\"margin:8px 15px; color:#333;\">LEMMA: Песочница ЖД</h3>' },
             { type: 'left', size: '50%', resizable: true, title: 'Исходные заготовки объектов' },
             { type: 'main', size: '50%', title: 'Записанные ЖД демонстрации' }
         ]
     });
 
-    new w2grid({
-        box: w2ui.mainLayout.el('left'), name: 'gridObjects', url: 'api.php?action=get_objects', method: 'GET',
-        show: { toolbar: true, footer: true, toolbarAdd: true, toolbarDelete: true },
-        columns: [
-            { field: 'slide_id', text: 'slide_id', size: '80px', sortable: true },
-            { field: 'name', text: 'Название объекта', size: '100%', sortable: true },
-            { field: 'demo_type', text: 'Тип демо', size: '120px', sortable: true }
-        ],
-        toolbar: {
-            items: [{ type: 'button', id: 'btn-record', text: '🎙 Записать ЖД', icon: 'w2ui-icon-pencil', disabled: true }],
-            onClick(ev) {
-                if (ev.target === 'btn-record') {
-                    const sel = w2ui.gridObjects.getSelection();
-                    if (sel.length > 0) {
-                        const selectedId = sel;
-                        const rowData = w2ui.gridObjects.get(selectedId);
-                        openStudioWindow(rowData);
-                    }
-                }
-            }
-        },
-        onSelect() { setTimeout(() => w2ui.gridObjects.toolbar.enable('btn-record'), 10); },
-        onUnselect() { setTimeout(() => { if (w2ui.gridObjects.getSelection().length === 0) w2ui.gridObjects.toolbar.disable('btn-record'); }, 10); },
-        onAdd() { openUploadDialog(); },
-        onDelete(ev) {
-            ev.preventDefault(); const sel = w2ui.gridObjects.getSelection(); if (sel.length === 0) return;
-            w2confirm('Удалить объект?').yes(() => {
-                query('api.php', { action: 'delete_object', slide_id: sel }).then(() => { w2ui.gridObjects.reload(); w2ui.gridObjects.toolbar.disable('btn-record'); });
+    initGridObjects(openStudioWindow, openUploadDialog);
+    initGridScenarios(openPlayerWindow);
+});
+
+function openUploadDialog() {
+    w2popup.open({
+        title: 'Загрузка объекта в БД', body: document.getElementById('upload-form-box').innerHTML, width: 450, height: 280,
+        buttons: '<button class=\"w2ui-btn w2ui-btn-blue\" id=\"popup-btn-upload\">Сохранить</button>',
+        onOpen(ev) {
+            ev.done(() => {
+                document.getElementById('popup-btn-upload').onclick = () => {
+                    const fd = new FormData(document.querySelector('#w2ui-popup #upload-file-form'));
+                    fd.append('action', 'upload_object');
+                    fetch('api.php', { method: 'POST', body: fd }).then(r => r.json()).then(res => { if (res.status === 'success') { w2popup.close(); w2ui.gridObjects.reload(); } else { w2alert(res.message); } });
+                };
             });
         }
     });
-    new w2grid({
-        box: w2ui.mainLayout.el('main'), name: 'gridScenarios', url: 'api.php?action=get_scenarios', method: 'GET',
-        show: { toolbar: true, footer: true },
-        columns: [
-            { field: 'section_id', text: 'section_id', size: '90px', sortable: true },
-            { field: 'slide_id', text: 'slide_id', size: '80px', sortable: true },
-            { field: 'name', text: 'Название сценария ЖД', size: '100%', sortable: true }
-        ],
-        toolbar: {
-            items: [{ type: 'button', id: 'btn-play', text: '▶ Просмотр ЖД', icon: 'w2ui-icon-search', disabled: true }],
-            onClick(ev) {
-                if (ev.target === 'btn-play') {
-                    const sel = w2ui.gridScenarios.getSelection();
-                    if (sel.length > 0) {
-                        const selectedId = sel[0]; // Жестко берем число из массива
-                        const rowData = w2ui.gridScenarios.get(selectedId);
-                        openPlayerWindow(rowData.section_id);
-                    }
-                }
-            }
-            onClick(ev) {
-                if (ev.target === 'btn-play') {
-                    const sel = w2ui.gridScenarios.getSelection();
-                    if (sel.length > 0) {
-                        const selectedId = sel[0]; // Жестко берем число из массива
-                        const rowData = w2ui.gridScenarios.get(selectedId);
-                        openPlayerWindow(rowData.section_id);
-                    }
-                }
-            }
-
-
-    });
+}
 
 function openStudioWindow(gridRow) {
     if(!gridRow) return;
@@ -141,17 +98,17 @@ function openPlayerWindow(sectionId) {
                         if (res.status !== 'success') { w2alert(res.message); w2popup.close(); return; }
                         const scenario = res.data; td.textContent = 'Сценарий: ' + scenario.name;
                         const commandsArray = JSON.parse(scenario.commands_json);
-                        alert('Отладка: Команд в БД = ' + commandsArray.length);
+                        alert('Отладка 1: Команд в базе = ' + commandsArray.length);
                         fetch('api.php?action=get_blob&source=command&id=' + sectionId).then(r => r.blob()).then(blob => {
                             const playerArgs = [blob, commandsArray];
-                            alert('Отладка: Передано аргументов = ' + playerArgs.length);
+                            alert('Отладка 2: Аргументов в плеер = ' + playerArgs.length);
                             if (scenario.demo_type === 'video') {
                                 AppState.activeSlideInstance = new SlideRecordVideo(...playerArgs);
                             } else {
                                 AppState.activeSlideInstance = new SlideRecord2D(...playerArgs);
                             }
                             AppState.activeSlideInstance.render(wp);
-                            alert('Отладка: recordMode плеера = ' + AppState.activeSlideInstance.recordMode);
+                            alert('Отладка 3: recordMode плеера = ' + AppState.activeSlideInstance.recordMode);
                             initPlayerEvents();
                         });
                     });
