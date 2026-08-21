@@ -103,21 +103,25 @@ function initStudioEvents() {
             const ms = String(diff % 1000).padStart(3, '0').slice(0, 2);
             const secs = String(Math.floor(diff / 1000) % 60).padStart(2, '0');
 function openPlayerWindow(sectionId) {
+function openPlayerWindow(sectionId) {
     w2popup.open({
-        title: 'Воспроизведение ЖД', body: document.getElementById('player-window-box').innerHTML, width: 900, height: 650, modal: true,
+        title: 'Воспроизведение ЖД',
+        body: document.getElementById('player-window-box').innerHTML,
+        width: 900, height: 650, modal: true,
         onOpen(ev) {
             ev.done(() => {
                 setTimeout(() => {
                     const wp = document.querySelector('#w2ui-popup #player-workplace');
                     const td = document.querySelector('#w2ui-popup #player-title');
                     wp.style.width = '800px'; wp.style.height = '600px'; wp.style.margin = '0 auto';
-                    fetch('api.php?action=get_scenario_data&section_id=' + sectionId).then(r => r.json()).then(res => {
+                    fetch('api.php?action=get_scenario_data&section_id=' + sectionId)
+                    .then(r => r.json()).then(res => {
                         if (res.status !== 'success') { w2alert(res.message); w2popup.close(); return; }
                         const scenario = res.data;
                         td.textContent = 'Сценарий: ' + scenario.name;
                         const commandsArray = JSON.parse(scenario.commands_json);
-                        fetch('api.php?action=get_blob&source=command&id=' + sectionId).then(r => r.blob()).then(blob => {
-                            // Упаковываем строго в один массив аргументов [blob, commands]
+                        fetch('api.php?action=get_blob&source=command&id=' + sectionId)
+                        .then(r => r.blob()).then(blob => {
                             const playerArgs = [blob, commandsArray];
                             if (scenario.demo_type === 'video') {
                                 AppState.activeSlideInstance = new SlideRecordVideo(playerArgs);
@@ -131,17 +135,11 @@ function openPlayerWindow(sectionId) {
                 }, 150);
             });
         },
-        onClose() { if (AppState.activeSlideInstance) AppState.activeSlideInstance.pause(); AppState.activeSlideInstance = null; }
+        onClose() {
+            if (AppState.activeSlideInstance) AppState.activeSlideInstance.pause();
+            AppState.activeSlideInstance = null;
+        }
     });
 }
-        onClose() { if (AppState.activeSlideInstance) AppState.activeSlideInstance.pause(); AppState.activeSlideInstance = null; }
-    });
-}
-function initPlayerEvents() { 
-    const btnPlay = document.querySelector('#w2ui-popup #btn-player-play');
-    const btnPause = document.querySelector('#w2ui-popup #btn-player-pause');
-    const btnClose = document.querySelector('#w2ui-popup #btn-player-close');
-    btnPlay.onclick = () => AppState.activeSlideInstance.play();
-    btnPause.onclick = () => AppState.activeSlideInstance.pause();
     btnClose.onclick = () => w2popup.close();
 }
