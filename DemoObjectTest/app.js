@@ -102,20 +102,6 @@ function initStudioEvents() {
             const diff = Date.now() - AppState.startTime;
             const ms = String(diff % 1000).padStart(3, '0').slice(0, 2);
             const secs = String(Math.floor(diff / 1000) % 60).padStart(2, '0');
-            const mins = String(Math.floor(diff / 60000)).padStart(2, '0');
-            timerDisplay.textContent = mins + ':' + secs + '.' + ms;
-        }, 30);
-        AppState.activeSlideInstance.start();
-    };
-    btnStop.onclick = () => {
-        clearInterval(AppState.timerInterval); btnStop.disabled = true;
-        AppState.activeSlideInstance.finish(); const recordedCommands = AppState.activeSlideInstance.getCommands();
-        const val = prompt('Введите название сценария демонстрации:', '');
-        if (!val) { w2popup.close(); return; }
-        const fd = new FormData(); fd.append('action', 'save_scenario'); fd.append('slide_id', AppState.currentSlideId); fd.append('name', val); fd.append('commands', JSON.stringify(recordedCommands));
-        fetch('api.php', { method: 'POST', body: fd }).then(r => r.json()).then(res => { if (res.status === 'success') { w2popup.close(); w2ui.gridScenarios.reload(); } else { w2alert(res.message); } });
-    };
-}
 function openPlayerWindow(sectionId) {
     w2popup.open({
         title: 'Воспроизведение ЖД', body: document.getElementById('player-window-box').innerHTML, width: 900, height: 650, modal: true,
@@ -127,16 +113,27 @@ function openPlayerWindow(sectionId) {
                     wp.style.width = '800px'; wp.style.height = '600px'; wp.style.margin = '0 auto';
                     fetch('api.php?action=get_scenario_data&section_id=' + sectionId).then(r => r.json()).then(res => {
                         if (res.status !== 'success') { w2alert(res.message); w2popup.close(); return; }
-                        const scenario = res.data; td.textContent = 'Сценарий: ' + scenario.name;
+                        const scenario = res.data;
+                        td.textContent = 'Сценарий: ' + scenario.name;
                         const commandsArray = JSON.parse(scenario.commands_json);
                         fetch('api.php?action=get_blob&source=command&id=' + sectionId).then(r => r.blob()).then(blob => {
-                            AppState.activeSlideInstance = scenario.demo_type === 'video' ? new SlideRecordVideo(blob, commandsArray) : new SlideRecord2D(blob, commandsArray);
-                            AppState.activeSlideInstance.render(wp); initPlayerEvents();
+                            // Упаковываем строго в один массив аргументов [blob, commands]
+                            const playerArgs = [blob, commandsArray];
+                            if (scenario.demo_type === 'video') {
+                                AppState.activeSlideInstance = new SlideRecordVideo(playerArgs);
+                            } else {
+                                AppState.activeSlideInstance = new SlideRecord2D(playerArgs);
+                            }
+                            AppState.activeSlideInstance.render(wp);
+                            initPlayerEvents();
                         });
                     });
                 }, 150);
             });
         },
+        onClose() { if (AppState.activeSlideInstance) AppState.activeSlideInstance.pause(); AppState.activeSlideInstance = null; }
+    });
+}
         onClose() { if (AppState.activeSlideInstance) AppState.activeSlideInstance.pause(); AppState.activeSlideInstance = null; }
     });
 }
