@@ -1,4 +1,4 @@
-import { w2ui, w2layout, w2popup, w2alert } from '/w2ui-2.0.es6.js';
+import { w2ui, w2layout, w2popup } from '/w2ui-2.0.es6.js';
 import SlideRecord2D from './js/slideRastr2d.js';
 import SlideRecordVideo from './js/slideVideo.js';
 import { initGridObjects } from './js/appGridObjects.js';
@@ -87,7 +87,6 @@ function initStudioEvents() {
 
 function openPlayerWindow(gridRow) {
     if(!gridRow) return;
-    // Используем slide_id из связанной заготовки для определения типа демо (видео или растр)
     w2popup.open({
         title: 'Воспроизведение Живой Демонстрации LEMMA — Сценарий: ' + gridRow.name, body: document.getElementById('player-window-box').innerHTML, width: 900, height: 650, modal: true,
         onOpen(ev) {
@@ -98,15 +97,12 @@ function openPlayerWindow(gridRow) {
                     wp.style.width = '800px'; wp.style.height = '600px'; wp.style.margin = '0 auto';
                     td.textContent = 'Сценарий: ' + gridRow.name;
                     
-                    // Скачиваем бинарный файл-подложку точно так же, как в студии записи
                     fetch('api.php?action=get_blob&source=command&id=' + gridRow.section_id).then(r => r.blob()).then(blob => {
-                        // В базе данных JSON команд хранится в этой же строке, но w2ui подгрузит его динамически
-                        // Так как структура SlideA требует плоский массив [blob, commands], передаем его:
                         const commandsArray = gridRow.commands_json ? JSON.parse(gridRow.commands_json) : [];
                         const playerArgs = [blob, commandsArray];
                         
-                        // Определяем тип объекта: если в имени заготовки или типе есть видео, запускаем видеокласс
-                        if (gridRow.name.indexOf('video') !== -1) {
+                        // Идеальное сходство: класс определяется по точному полю бэкенда demo_type
+                        if (gridRow.demo_type === 'video') {
                             AppState.activeSlideInstance = new SlideRecordVideo(...playerArgs);
                         } else {
                             AppState.activeSlideInstance = new SlideRecord2D(...playerArgs);

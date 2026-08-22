@@ -15,10 +15,10 @@ export function initGridScenarios(openPlayerWindow) {
                 if (ev.target === 'btn-play') {
                     const sel = w2ui.gridScenarios.getSelection();
                     if (sel.length > 0) {
-                        const selectedId = sel[0]; // Извлекаем ID как число из массива w2ui
+                        const selectedId = sel[0]; 
                         const rows = w2ui.gridScenarios.get(selectedId);
-                        // Если w2ui вернул массив объектов, берем первый, иначе сам объект
-                        const rowData = Array.is_array(rows) ? rows[0] : rows;
+                        // Исправлено: используем стандартный нативный Array.isArray()
+                        const rowData = Array.isArray(rows) ? rows[0] : rows;
                         openPlayerWindow(rowData); 
                     }
                 }

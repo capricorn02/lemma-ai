@@ -1,8 +1,9 @@
 import {SlideA} from './slideA.js';
 
 export default class extends SlideA {
-	constructor (...args) {
-		super(...args); 
+	constructor (blob, commands) {
+		// Явно передаем параметры в базовый конструктор
+		super(blob, commands); 
 		this.onMouseDown = this.onMouseDown.bind(this);
 		this.onMouseUp = this.onMouseUp.bind(this);
 		this.onMouseMove = this.onMouseMove.bind(this);
@@ -12,9 +13,11 @@ export default class extends SlideA {
 	
 	render (slideElement) {
 		super.render(slideElement);
-		this.slideDIV.insertAdjacentHTML('beforeEnd', '<img src="' + URL.createObjectURL(this.blob) + '" width="' + this.width + '" height="' + this.height + '" draggable="false" style="z-index: 200; position: absolute; top: 0px; left: 0px">');
-	}
-	
+		this.slideDIV.insertAdjacentHTML('beforeEnd', 
+			'<img src="' + URL.createObjectURL(this.blob) + '" width="' + this.width + '" height="' + this.height + '" draggable="false" style="z-index: 200; position: absolute; top: 0px; left: 0px">'
+		);
+	}	
+		
 	beginPath () { this.context.beginPath(); }
 	moveTo (options) { let XY = this.denorm(options); this.context.moveTo(XY[0], XY[1]); }
 	lineTo (options) {
@@ -45,17 +48,17 @@ export default class extends SlideA {
 		this.penColor = 'red'; this.penWidth = '3';
 	}
 	
-	start () {
+	start () { 
 		super.start();
 		this.slideDIV.onmousedown = this.onMouseDown;
 		document.addEventListener('mouseup', this.onMouseUp);
-	}
+	}	
 
 	onMouseDown (event){
 		event.stopPropagation();
 		let XY = [event.offsetX, event.offsetY];
 		this.fixate('beginPath');
-		this.fixate('setPenColor', this.penColor);
+		this.fixate('setPenColor', this.penColor); 
 		this.fixate('setPenWidth', this.penWidth);
 		this.fixate('moveTo', this.norm(XY));
 		this.slideDIV.onmousemove = this.onMouseMove;

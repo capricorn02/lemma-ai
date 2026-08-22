@@ -22,9 +22,7 @@ switch ($action) {
         try {
             $stmt = $pdo->query("SELECT slide_id, name, demo_type FROM demo_objects ORDER BY slide_id DESC");
             $records = $stmt->fetchAll();
-            foreach ($records as &$row) {
-                $row['recid'] = $row['slide_id'];
-            }
+            foreach ($records as &$row) { $row['recid'] = $row['slide_id']; }
             echo json_encode(['status' => 'success', 'records' => $records]);
         } catch (Exception $e) {
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
@@ -32,10 +30,7 @@ switch ($action) {
         break;
 
     case 'upload_object':
-        if (empty($_FILES['blob_file'])) {
-            echo json_encode(['status' => 'error', 'message' => 'Файл не передан']);
-            exit;
-        }
+        if (empty($_FILES['blob_file'])) { echo json_encode(['status' => 'error', 'message' => 'Файл не передан']); exit; }
         $file = $_FILES['blob_file'];
         $demo_type = $_POST['demo_type'] ?? '2D_rastr';
         $custom_name = trim($_POST['name'] ?? '');
@@ -79,7 +74,7 @@ switch ($action) {
         if (!$slide_id) { echo json_encode(['status' => 'error', 'message' => 'Укажите slide_id']); exit; }
 
         try {
-            $stmt = $pdo->prepare("SELECT name, blob_data FROM demo_objects WHERE slide_id = ?");
+            $stmt = $pdo->prepare("SELECT name, demo_type, blob_data FROM demo_objects WHERE slide_id = ?");
             $stmt->execute([$slide_id]);
             $origin = $stmt->fetch();
             if (!$origin) { echo json_encode(['status' => 'error', 'message' => 'Объект не найден']); exit; }
@@ -91,11 +86,12 @@ switch ($action) {
             $final_name = $base_name;
             if ($count > 0) { $final_name = $base_name . " ($count)"; }
 
-            $stmt = $pdo->prepare("INSERT INTO demo_commands (slide_id, name, commands_json, blob_data) VALUES (?, ?, ?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO demo_commands (slide_id, name, demo_type, commands_json, blob_data) VALUES (?, ?, ?, ?, ?)");
             $stmt->bindParam(1, $slide_id);
             $stmt->bindParam(2, $final_name);
-            $stmt->bindParam(3, $commands_json);
-            $stmt->bindParam(4, $origin['blob_data'], PDO::PARAM_LOB);
+            $stmt->bindParam(3, $origin['demo_type']);
+            $stmt->bindParam(4, $commands_json);
+            $stmt->bindParam(5, $origin['blob_data'], PDO::PARAM_LOB);
             $stmt->execute();
             echo json_encode(['status' => 'success', 'message' => 'Сценарий сохранен: ' . $final_name]);
         } catch (Exception $e) {
@@ -105,7 +101,7 @@ switch ($action) {
 
     case 'get_scenarios':
         try {
-            $stmt = $pdo->query("SELECT section_id, slide_id, name, commands_json FROM demo_commands ORDER BY section_id DESC");
+            $stmt = $pdo->query("SELECT section_id, slide_id, name, demo_type, commands_json FROM demo_commands ORDER BY section_id DESC");
             $records = $stmt->fetchAll();
             foreach ($records as &$row) { $row['recid'] = $row['section_id']; }
             echo json_encode(['status' => 'success', 'records' => $records]);
@@ -123,7 +119,7 @@ switch ($action) {
             } else {
                 $stmt = $pdo->prepare("SELECT blob_data FROM demo_objects WHERE slide_id = ?");
             }
-            $stmt->execute([id]);
+            $stmt->execute([$id]); // Исправлено: добавлен знак доллара $id
             $stmt->bindColumn(1, $lob, PDO::PARAM_LOB);
             if ($stmt->fetch(PDO::FETCH_BOUND)) {
                 if (ob_get_length()) ob_clean();
@@ -131,12 +127,10 @@ switch ($action) {
                 if (is_resource($lob)) { fpassthru($lob); } else { echo $lob; }
                 exit;
             } else {
-                header("HTTP/1.0 404 Not Found");
-                echo "Файл не найден";
+                header("HTTP/1.0 404 Not Found"); echo "Файл не найден";
             }
         } catch (Exception $e) {
-            header("HTTP/1.0 500 Internal Server Error");
-            echo $e->getMessage();
+            header("HTTP/1.0 500 Internal Server Error"); echo $e->getMessage();
         }
         break;
 
