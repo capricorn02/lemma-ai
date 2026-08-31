@@ -1,0 +1,215 @@
+/* Общий стиль текста 
+🔁 ▶️ ⏭️ ⏭️ ⏮️ ⏸️ ▶💾🔁 ▶️ ⏭️ ⏭️ ⏮️ ⏸️ ▶️ 🎧 🔋 ⚛︎
+
+*/
+body {
+	font-family: Arial, sans-serif;
+	color: #333;
+	/* Черный цвет текста */
+}
+
+/* Заголовок */
+#headerTAG {
+	font-size: 18px;
+	text-align: center;
+	margin-top: 20px;
+	font-weight: 300; 
+	background-color: RGB(220, 220, 220);
+}
+
+#fc1,
+#fc2,
+#statusDIV {
+	width: 150px;
+	font-size: 18px;	
+}	
+
+/* Стиль кнопок */
+button {
+	padding: 6px 12px;
+	background-color: #007bff;
+	/* Синий цвет фона */
+	
+	color: RGB(255, 255, 0);
+	font-size: 16px;
+	font-weight: 600; 
+	/* Белый цвет текста */
+	border: none;
+	border-radius: 5px;
+	cursor: pointer;
+	margin-right: 10px;
+}
+
+/* Стиль кнопок при наведении */
+button:hover {
+	background-color: #0056b3;
+	/* Темно-синий цвет фона */
+}
+button:disabled {
+	background-color: #bbb;
+	color: RGB(255,255,255);
+	/* Темно-синий цвет фона */
+}
+
+/* Выпадающий список */
+select {
+	width: 100%;
+	padding: 8px;
+	/* Поля вокруг текста */
+	border: 1px solid #ccc;
+	/* Светло-серый цвет рамки */
+	border-radius: 5px;
+		font-size: 18px;
+}
+
+/* Стиль таблицы */
+table {
+	width: 100%;
+	border-collapse: collapse;
+	/* Убираем промежутки между ячейками */
+}
+
+/* Стиль ячеек таблицы */
+td {
+	padding: 10px;
+	border: 1px solid #ccc;
+}
+
+p {
+	font-style: bold;
+	text-align: left;
+	color: blue
+}
+
+
+select {
+	width: 400px;
+}
+
+#header1 {
+	bgcolor: blue;
+	font-style: bold;
+	color: blue
+}
+
+#t1 {
+	cellspacing: 0;
+}
+
+#Canvas1 {
+	border-width: 2;
+	border-color: red;
+	border-style: double
+}
+
+#td1 {
+	position: relative
+}
+
+#video2 {
+	position: absolute;
+	bottom: 0;
+	left: 0px;
+}
+
+#logPhotoIMG {
+	position: absolute;
+	top: 300px;
+	left: 0px;
+	display: none;
+}
+
+#canvas2 {
+	position: absolute;
+	bottom: 0;
+	left: 0px;
+}
+
+/* Область чата */
+#chatDIV {
+	border: 1px solid rgb(206, 208, 206);
+	background-color: #e3e6e6;
+	/* Светло-серый цвет фона */
+	overflow-y: auto;
+	/* Автоматическая прокрутка по вертикали */
+	overflow-x: hidden;
+	width: 300px;
+	height: 400px;
+	position: fixed;
+	right: 10px;
+	bottom: 10px;
+	display: none;
+	z-index: 1;
+}
+
+#faceDIV {
+	background-color: transparent;
+	overflow-y: hidden;
+	overflow-x: hidden;
+	width: 400px;
+	height: 300px;
+	position: fixed;
+	left: 10px;
+	bottom: 10px;
+	display: none;
+
+}
+
+/* Область опроса */
+#quizDIV {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	background-color: rgb(206, 208, 206);
+	/* Зеленый цвет фона */
+	width: 610px;
+	overflow-y: hidden;
+	overflow-x: hidden;
+	position: fixed;
+	left: 200px;
+	top: 200px;
+	padding: 5px;
+}
+
+/* Область старта */
+#startDIV {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 5px;
+	background-color: rgb(206, 208, 206);
+	/* Зеленый цвет фона */
+	overflow-y: hidden;
+	overflow-x: hidden;
+	width: 600px;
+	position: fixed;
+	left: 200px;
+	top: 200px;
+}
+
+#slideWindow {
+	width: 600px;
+	height: 450px;
+}
+
+#slideDIV {
+	width: 600px;
+	height: 450px;
+}
+
+#labDIV {
+	background-color: RGB(150,150,150);
+	width: 900px;
+	height: 750px;
+	position: fixed;
+	left: 200px;
+	top: 50px;
+	display: none;
+	z-index: 1
+}
+
+#labSlideDIV {
+	width: 900px;
+	height: 600px;
+}
+

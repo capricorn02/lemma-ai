@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEMMA — Развертывание БД ММЛ</title>
+    <link rel="stylesheet" type="text/css" href="../lib/w2ui-2.0.min.css" />
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 24px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+        .page-container {
+            max-width: 860px;
+            margin: 0 auto;
+        }
+        .header-card {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header-title h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .header-title p {
+            margin: 4px 0 0 0;
+            font-size: 13px;
+            color: #64748b;
+        }
+        .badge-mml {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .content-card {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 20px;
+        }
+        #form-container {
+            width: 100%;
+            height: 240px;
+        }
+        .diag-card {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .diag-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .diag-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #1e293b;
+        }
+        .diag-status {
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .status-idle { color: #64748b; }
+        .status-ok { color: #16a34a; }
+        .status-warn { color: #d97706; }
+        .status-err { color: #dc2626; }
+        .log-box {
+            background: #0f172a;
+            color: #e2e8f0;
+            border-radius: 6px;
+            padding: 16px;
+            font-family: "Consolas", "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .log-line {
+            margin: 2px 0;
+            display: flex;
+            align-items: baseline;
+        }
+        .log-time { color: #64748b; margin-right: 8px; font-size: 12px; }
+        .log-tag-ok { color: #4ade80; font-weight: bold; margin-right: 8px; }
+        .log-tag-warn { color: #fbbf24; font-weight: bold; margin-right: 8px; }
+        .log-tag-err { color: #f87171; font-weight: bold; margin-right: 8px; }
+        .log-tag-info { color: #60a5fa; font-weight: bold; margin-right: 8px; }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <!-- Шапка -->
+        <div class="header-card">
+            <div class="header-title">
+                <h1>🗄️ Утилита развертывания БД ММЛ</h1>
+                <p>Инициализация и пересоздание канонической схемы базы данных ЛЕММА (https://ai)</p>
+            </div>
+            <div class="badge-mml">Схема: 8 таблиц ММЛ</div>
+        </div>
+
+        <!-- Форма параметров -->
+        <div class="content-card">
+            <div id="form-container"></div>
+        </div>
+
+        <!-- Панель диагностики -->
+        <div class="diag-card">
+            <div class="diag-header">
+                <h3>📋 Протокол выполнения (Диагностика)</h3>
+                <span id="diag-status-badge" class="diag-status status-idle">Ожидание запуска</span>
+            </div>
+            <div id="log-box" class="log-box">
+                <div class="log-line">
+                    <span class="log-time">[готов]</span>
+                    <span class="log-tag-info">[ИНФО]</span>
+                    <span>Укажите параметры подключения и нажмите «Проверить соединение» или «Развернуть / Пересоздать БД».</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { w2form, w2utils, w2alert, w2confirm } from '../lib/w2ui-2.0.es6.js';
+        import { recreateDB, connectDB } from '../dbLayer/dbMML.js';
+
+        const logBox = document.getElementById('log-box');
+        const statusBadge = document.getElementById('diag-status-badge');
+
+        function appendLog(type, message, detail = '') {
+            const time = new Date().toLocaleTimeString();
+            const line = document.createElement('div');
+            line.className = 'log-line';
+
+            let tagClass = 'log-tag-info';
+            let tagText = '[ИНФО]';
+            if (type === 'success') { tagClass = 'log-tag-ok'; tagText = '[ УСПЕХ ]'; }
+            if (type === 'warn') { tagClass = 'log-tag-warn'; tagText = '[ВНИМАНИЕ]'; }
+            if (type === 'error') { tagClass = 'log-tag-err'; tagText = '[ОШИБКА]'; }
+
+            line.innerHTML = `
+                <span class="log-time">[${time}]</span>
+                <span class="${tagClass}">${tagText}</span>
+                <span><b>${escapeHtml(message)}</b> ${detail ? `— <span style="color:#94a3b8">${escapeHtml(detail)}</span>` : ''}</span>
+            `;
+            logBox.appendChild(line);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function clearLog() {
+            logBox.innerHTML = '';
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // Инициализация w2form
+        let form = new w2form({
+            name: 'recreate_form',
+            box: '#form-container',
+            fields: [
+                {
+                    field: 'DB_HOST',
+                    type: 'text',
+                    required: true,
+                    html: { label: 'Хост СУБД' }
+                },
+                {
+                    field: 'DB_NAME',
+                    type: 'text',
+                    required: true,
+                    html: { label: 'Имя базы данных' }
+                },
+                {
+                    field: 'DB_USER',
+                    type: 'text',
+                    required: true,
+                    html: { label: 'Пользователь' }
+                },
+                {
+                    field: 'DB_PASSWORD',
+                    type: 'password',
+                    required: false,
+                    html: { label: 'Пароль' }
+                }
+            ],
+            record: {
+                DB_HOST: 'MySQL-8.2',
+                DB_NAME: 'demotest',
+                DB_USER: 'root',
+                DB_PASSWORD: ''
+            },
+            actions: {
+                'Проверить соединение': async function () {
+                    if (this.validate().length > 0) return;
+                    clearLog();
+                    statusBadge.className = 'diag-status status-idle';
+                    statusBadge.innerText = 'Проверка доступа к СУБД...';
+                    appendLog('info', 'Проверка доступа к СУБД MySQL...', `Хост: ${this.record.DB_HOST}, Пользователь: ${this.record.DB_USER}`);
+
+                    w2utils.lock(this.box, 'Проверка доступа к MySQL...', true);
+                    try {
+                        let res = await connectDB(
+                            this.record.DB_HOST,
+                            this.record.DB_NAME,
+                            this.record.DB_USER,
+                            this.record.DB_PASSWORD
+                        );
+                        w2utils.unlock(this.box);
+                        if (res && res.status) {
+                            if (res.db_exists) {
+                                statusBadge.className = 'diag-status status-ok';
+                                statusBadge.innerText = '✓ СУБД доступна (БД существует)';
+                                appendLog('success', 'Доступ к СУБД получен!', `База данных «${this.record.DB_NAME}» найдена и готова к использованию.`);
+                                w2alert(`Доступ к СУБД <b>${this.record.DB_HOST}</b> получен успешно!<br><br>База данных <b>${this.record.DB_NAME}</b> найдена.`, 'Проверка связи');
+                            } else {
+                                statusBadge.className = 'diag-status status-warn';
+                                statusBadge.innerText = '✓ СУБД доступна (БД еще не создана)';
+                                appendLog('warn', 'Доступ к СУБД получен!', `База данных «${this.record.DB_NAME}» пока не существует. Она будет создана при нажатии «Развернуть / Пересоздать БД».`);
+                                w2alert(`Доступ к СУБД <b>${this.record.DB_HOST}</b> получен успешно!<br><br>База данных <b>${this.record.DB_NAME}</b> еще не создана.<br>Она будет создана автоматически при нажатии «Развернуть / Пересоздать БД».`, 'Проверка связи');
+                            }
+                        } else {
+                            statusBadge.className = 'diag-status status-err';
+                            statusBadge.innerText = '✗ Ошибка подключения';
+                            appendLog('error', 'Не удалось подключиться к СУБД', res?.error || 'Проверьте запущен ли модуль MySQL в OpenServer');
+                            w2alert(res?.error || 'Не удалось подключиться к СУБД MySQL. Проверьте запущен ли модуль MySQL в OpenServer.', 'Ошибка');
+                        }
+                    } catch (err) {
+                        w2utils.unlock(this.box);
+                        statusBadge.className = 'diag-status status-err';
+                        statusBadge.innerText = '✗ Ошибка';
+                        appendLog('error', 'Исключение при запросе', err.message);
+                    }
+                },
+
+                'Развернуть / Пересоздать БД': function () {
+                    if (this.validate().length > 0) return;
+                    const rec = this.record;
+
+                    w2confirm(`Вы действительно хотите развернуть базу данных «${rec.DB_NAME}» на хосте «${rec.DB_HOST}»?<br><br><span style="color:#dc2626;font-size:12px;"><b>Внимание:</b> Если БД уже существует, все таблицы в ней будут пересозданы с нуля.</span>`)
+                        .yes(async () => {
+                            clearLog();
+                            statusBadge.className = 'diag-status status-idle';
+                            statusBadge.innerText = 'Выполняется развертывание...';
+                            appendLog('info', 'Запуск процесса развертывания БД ММЛ...', `Целевая БД: ${rec.DB_NAME}`);
+
+                            w2utils.lock(this.box, 'Пересоздание таблиц БД...', true);
+                            try {
+                                let res = await recreateDB(
+                                    rec.DB_HOST,
+                                    rec.DB_NAME,
+                                    rec.DB_USER,
+                                    rec.DB_PASSWORD
+                                );
+                                w2utils.unlock(this.box);
+
+                                if (res && res.status) {
+                                    statusBadge.className = 'diag-status status-ok';
+                                    statusBadge.innerText = '✓ БД успешно развернута';
+
+                                    if (Array.isArray(res.steps)) {
+                                        res.steps.forEach(s => {
+                                            appendLog(s.status, s.step, s.detail);
+                                        });
+                                    }
+
+                                    appendLog('success', 'Все 8 таблиц созданы, demotypes наполнены!', `БД «${res.dbname}» готова к работе.`);
+                                    w2alert(`База данных <b>${res.dbname}</b> успешно развернута со всеми 8 таблицами схемы ММЛ!`, 'Успех');
+                                } else {
+                                    statusBadge.className = 'diag-status status-err';
+                                    statusBadge.innerText = '✗ Ошибка развертывания';
+                                    if (Array.isArray(res?.steps)) {
+                                        res.steps.forEach(s => appendLog(s.status, s.step, s.detail));
+                                    }
+                                    appendLog('error', 'Ошибка при пересоздании БД', res?.error || 'Неизвестная ошибка');
+                                    w2alert(res?.error || 'Произошла ошибка при создании БД.', 'Ошибка');
+                                }
+                            } catch (err) {
+                                w2utils.unlock(this.box);
+                                statusBadge.className = 'diag-status status-err';
+                                statusBadge.innerText = '✗ Исключение';
+                                appendLog('error', 'Критическая ошибка', err.message);
+                            }
+                        });
+                }
+            }
+        });
+    </script>
+</body>
+</html>

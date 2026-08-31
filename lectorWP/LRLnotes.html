@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head> 
+  <meta charset="utf-8"/>
+	<script>
+window.onload = init;
+
+fs0 = 20
+
+function init () {
+	window.opener.notesDIV = document.querySelector ("#notes")
+	notes.style.fontSize = '12px'
+}
+	
+
+ 
+function increase() {
+	fs0 = fs0 + 2
+	notes.style.fontSize = `${fs0}px`
+}
+function decrease() {
+	if (fs0 > 12) {fs0 = fs0 -2}
+	notes.style.fontSize = `${fs0}px`
+}
+
+
+
+	</script>	
+</head>
+<body>
+<div>
+	<button onclick="increase()">T+</button>
+	<button onclick="decrease()">T-</button>	
+</div>
+<div id="notes"></div>
+</body>
+</html>
